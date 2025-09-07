@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mj0nez/restic-exporter/internal"
+	"github.com/mj0nez/restic-exporter/internal/metrics"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +36,7 @@ func Execute() error {
 
 func runServer(cmd *cobra.Command, args []string) {
 
-	metricsRegistry := internal.NewRegistry()
+	metricsRegistry := metrics.NewRegistry()
 
 	server := internal.NewHttpServer("0.0.0.0:8081", internal.NewRouter(metricsRegistry), internal.NewHttpServerOpts())
 	err := internal.RunServer(server)
@@ -48,8 +49,5 @@ func runServer(cmd *cobra.Command, args []string) {
 
 func runCollect(cmd *cobra.Command, args []string) {
 
-	_, err := internal.Collect()
-	if err != nil {
-		fmt.Printf("Encountered collection error: %s", err)
-	}
+	internal.Collect()
 }

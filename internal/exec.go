@@ -1,16 +1,21 @@
 package internal
 
 import (
+	"context"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-func runCommand(binPath string, cwd string, args []string, env map[string]string, stdout io.Writer, stderr io.Writer) error {
+func runCommand(ctx context.Context, binPath string, cwd string, args []string, env map[string]string, stdout io.Writer, stderr io.Writer) error {
+	var cmd *exec.Cmd
 
-	cmd := exec.Command(binPath, args...)
-
+	if ctx != nil {
+		cmd = exec.CommandContext(ctx, binPath, args...)
+	} else {
+		cmd = exec.Command(binPath, args...)
+	}
 	// handle environment and overrides
 	// we create a working copy, replace the overrides and rebuild the required array
 	os_env := os.Environ()

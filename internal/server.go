@@ -50,7 +50,7 @@ func NewRouter(registry *prometheus.Registry) *gin.Engine {
 	router := gin.Default()
 
 	// Expose /metrics HTTP endpoint using the created custom registry.
-	router.GET(metricsPath, func(ctx *gin.Context) {
+	router.GET("/metrics", func(ctx *gin.Context) {
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{Registry: registry}).ServeHTTP(ctx.Writer, ctx.Request)
 	})
 
@@ -67,6 +67,10 @@ func RunServer(server *http.Server) error {
 	defer stop()
 
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	log.Debug("Starting background worker.")
+
+	go StartWorker(ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+
 	log.Debug("Starting http listener.")
 	log.Info(fmt.Sprintf("Listening on %s", server.Addr))
 
