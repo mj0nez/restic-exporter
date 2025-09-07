@@ -48,7 +48,7 @@ func runServer(cmd *cobra.Command, args []string) {
 
 func runCollect(cmd *cobra.Command, args []string) {
 
-	err := internal.Collect()
+	_, err := internal.Collect()
 	if err != nil {
 		fmt.Printf("Encountered collection error: %s", err)
 	}

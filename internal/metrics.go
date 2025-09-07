@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	promVersion "github.com/prometheus/client_golang/prometheus/collectors/version"
 	promVersionInfo "github.com/prometheus/common/version"
@@ -11,6 +13,8 @@ import (
 const (
 	metricsPath = "/metrics"
 )
+
+var metricsLock sync.Mutex
 
 func init() {
 	// pass build information to prometheus - avoids additional linker flags
