@@ -1,26 +1,56 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/mj0nez/restic-exporter/internal/info"
 	promVersion "github.com/prometheus/client_golang/prometheus/collectors/version"
 
 	"github.com/prometheus/client_golang/prometheus"
+	promVersionInfo "github.com/prometheus/common/version"
 )
 
 var (
 	commonLabels = [...]string{"repo", "client_hostname", "client_username", "client_version", "snapshot_hash", "snapshot_tag", "snapshot_tags", "snapshot_paths"}
 
 	// metrics
-	CheckSuccess = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	// this was restic_check_success a gauge, which was only increased on success,
+	// which IMO neglects the case of an error
+	CheckSuccess = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name:      "restic_check_success",
 		Namespace: "restic",
-		Help:      "Result of restic check operation in the repository",
+		Help:      "Number of successful integrity checks in the repository",
 	}, []string{"repo"})
+	// this metric is new compared to the python exporter
+	CheckFailed = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name:      "restic_check_failed",
+		Namespace: "restic",
+		Help:      "Number of failed integrity checks in the repository",
+	}, []string{"repo"})
+	// this metric is new compared to the python exporter
+	CheckSuggestRepairIndex = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name:      "restic_check_suggest_repair_index",
+		Namespace: "restic",
+		Help:      "Metric indicating to repair the repository index",
+	}, []string{"repo"})
+	// this metric is new compared to the python exporter
+	CheckSuggestPrune = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name:      "restic_check_suggest_prune",
+		Namespace: "restic",
+		Help:      "Metric indicating to prune the repository",
+	}, []string{"repo"})
+	// this metric is new compared to the python exporter
+	CheckErrorsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name:      "restic_errors_total",
+		Namespace: "restic",
+		Help:      "Total number of errors in the repository",
+	}, []string{"repo"})
+
 	LocksTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name:      "restic_locks_total",
 		Namespace: "restic",
 		Help:      "Total number of locks in the repository",
 	}, []string{"repo"})
+	// this was a counter, but I assume with pruning the value might change
+	// furthermore this avoids incrementing until we reach the current value
 	SnapshotsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name:      "restic_snapshots_total",
 		Namespace: "restic",
@@ -53,6 +83,11 @@ var (
 	}, []string{"repo"})
 )
 
+func init() {
+	promVersionInfo.Version = info.Version
+	promVersionInfo.Revision = info.Revision
+}
+
 func NewRegistry() *prometheus.Registry {
 
 	// Create non-global registry.
@@ -60,10 +95,8 @@ func NewRegistry() *prometheus.Registry {
 
 	// Add go runtime metrics and process collectors.
 	reg.MustRegister(
-		collectors.NewGoCollector(),
-		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
-
-		// TODO consider re-implementing this
+		// collectors.NewGoCollector(),
+		// collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		promVersion.NewCollector("restic"),
 	)
 

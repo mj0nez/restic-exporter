@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mj0nez/restic-exporter/internal"
+	"github.com/mj0nez/restic-exporter/internal/info"
 	"github.com/mj0nez/restic-exporter/internal/metrics"
 	"github.com/spf13/cobra"
 )
@@ -12,8 +13,8 @@ var (
 	rootCmd *cobra.Command = &cobra.Command{
 		Use:     "restic-exporter",
 		Short:   "A Prometheus metrics exporter for restic.",
-		Long:    fmt.Sprintf("A Prometheus metrics exporter for restic. Version: %s Revision: %s", internal.Version, internal.Revision),
-		Version: internal.Version,
+		Long:    fmt.Sprintf("A Prometheus metrics exporter for restic. Version: %s Revision: %s", info.Version, info.Revision),
+		Version: info.Version,
 	}
 	// rootLogger *zap.Logger = logger.New("setup")
 )

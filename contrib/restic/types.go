@@ -60,3 +60,11 @@ type SnapshotSummary struct {
 	TotalFilesProcessed uint   `json:"total_files_processed"`
 	TotalBytesProcessed uint64 `json:"total_bytes_processed"`
 }
+
+type CheckSummary struct {
+	MessageType     string   `json:"message_type"` // "summary"
+	NumErrors       int      `json:"num_errors"`
+	BrokenPacks     []string `json:"broken_packs"`         // run "restic repair packs ID..." and "restic repair snapshots --forget" to remove damaged files
+	HintRepairIndex bool     `json:"suggest_repair_index"` // run "restic repair index"
+	HintPrune       bool     `json:"suggest_prune"`        // run "restic prune"
+}

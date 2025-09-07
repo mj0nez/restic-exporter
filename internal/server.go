@@ -47,6 +47,8 @@ func NewHttpServer(addr string, handler http.Handler, opts HttpServerOpts) *http
 }
 
 func NewRouter(registry *prometheus.Registry) *gin.Engine {
+
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
 	// Expose /metrics HTTP endpoint using the created custom registry.
@@ -69,14 +71,15 @@ func RunServer(server *http.Server) error {
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	log.Debug("Starting background worker.")
 
-	go StartWorker(ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+	go startWorker(collectSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+	go startWorker(collectCheck, ctx, time.Duration(20)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
 
 	log.Debug("Starting http listener.")
 	log.Info(fmt.Sprintf("Listening on %s", server.Addr))
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error("listen: ", err)
+			log.Error(fmt.Sprintf("listen: %v", err))
 		}
 	}()
 
@@ -90,7 +93,7 @@ func RunServer(server *http.Server) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5)*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Error("Agent forced to shutdown: ", err)
+		log.Error(fmt.Sprintf("Agent forced to shutdown: %v", err))
 	}
 	log.Info("Agent exiting")
 

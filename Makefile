@@ -25,24 +25,16 @@ build:
 		-v \
 		-ldflags "\
 			-s -w \
-			-X 'github.com/mj0nez/restic-exporter/internal.Version=${VERSION}' \
-			-X 'github.com/mj0nez/restic-exporter/internal.Revision=${REVISION}' \
+			-X 'github.com/mj0nez/restic-exporter/internal/info.Version=${VERSION}' \
+			-X 'github.com/mj0nez/restic-exporter/internal/info.Revision=${REVISION}' \
 			" \
 		-o ${BUILD_DIR}
 	@printf "Size:\t" && du -h $(BUILD_DIR)$(APP_NAME)
 .PHONY: build
 
-clean: db-clean
-	@rm -rf ${BUILD_DIR}/*
-.PHONY: clean
-
 tests:
 	@gotestsum
 .PHONY: tests
-
-# db-clean:
-# 	@rm -rf ${STORE_DIR}/*
-# .PHONY: db-clean
 
 bump-deps:
 	@go get -u && go mod tidy
