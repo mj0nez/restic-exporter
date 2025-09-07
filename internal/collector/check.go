@@ -1,4 +1,4 @@
-package internal
+package collector
 
 import (
 	"bytes"
@@ -16,60 +16,6 @@ import (
 
 var ErrCheck = fmt.Errorf("repository check failed")
 
-func Collect() {
-	snaps, err := getSnapshots(context.TODO(), "restic", ".tmp/repo")
-	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", ".tmp/repo", err))
-	}
-
-	fmt.Printf("%v", snaps)
-
-}
-
-func collectSnapshots(ctx context.Context, binPath string, repo string) {
-	snaps, err := getSnapshots(ctx, "restic", repo)
-
-	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", repo, err))
-	}
-
-	// metrics.CheckSuccess.
-	metrics.SnapshotsTotal.WithLabelValues(repo).Set(float64(len(snaps)))
-
-}
-
-func getSnapshots(ctx context.Context, binPath string, repo string) ([]restic.Snapshot, error) {
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	// create defaults
-	args := []string{"-r", repo, "--no-lock", "snapshots", "--json"}
-
-	env := make(map[string]string)
-
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-
-	err = runCommand(ctx, binPath, cwd, args, env, stdout, stderr)
-	if err != nil {
-		return nil, err
-	}
-	// fmt.Println(stdout.String())
-	// fmt.Println(stderr.String())
-
-	snapshots := make([]restic.Snapshot, 0, 10)
-
-	err = json.Unmarshal(stdout.Bytes(), &snapshots)
-	if err != nil {
-		return nil, err
-	}
-
-	return snapshots, nil
-}
-
 func boolToInt(val bool) int8 {
 	var i int8
 	if val {
@@ -78,7 +24,7 @@ func boolToInt(val bool) int8 {
 	return i
 }
 
-func collectCheck(ctx context.Context, binPath string, repo string) {
+func RunCheck(ctx context.Context, binPath string, repo string) {
 	check, err := checkRepo(ctx, "restic", repo)
 
 	if err != nil {
@@ -102,14 +48,12 @@ func checkRepo(ctx context.Context, binPath string, repo string) (*restic.CheckS
 	// check and verify integrity fo the repository
 	summary := &restic.CheckSummary{}
 
+	args := []string{"-r", repo, "--no-lock", "check", "--json"}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return summary, err
 	}
-
-	// create defaults
-	args := []string{"-r", repo, "--no-lock", "check", "--json"}
-
 	env := make(map[string]string)
 
 	stdout := new(bytes.Buffer)
@@ -135,5 +79,3 @@ func checkRepo(ctx context.Context, binPath string, repo string) (*restic.CheckS
 
 	return summary, nil
 }
-
-func runResticCli() {}

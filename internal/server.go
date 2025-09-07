@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mj0nez/restic-exporter/internal/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -71,8 +72,8 @@ func RunServer(server *http.Server) error {
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	log.Debug("Starting background worker.")
 
-	go startWorker(collectSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
-	go startWorker(collectCheck, ctx, time.Duration(20)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+	go startWorker(collector.GetSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+	go startWorker(collector.RunCheck, ctx, time.Duration(20)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
 
 	log.Debug("Starting http listener.")
 	log.Info(fmt.Sprintf("Listening on %s", server.Addr))

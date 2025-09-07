@@ -1,4 +1,4 @@
-package internal
+package collector
 
 import (
 	"context"
@@ -42,3 +42,6 @@ func runCommand(ctx context.Context, binPath string, cwd string, args []string, 
 
 	return cmd.Run()
 }
+
+// TODO consider extracting the common parts of ech cli usage to util func
+// func runResticCli() {}

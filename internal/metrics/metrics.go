@@ -44,8 +44,8 @@ var (
 		Help:      "Total number of errors in the repository",
 	}, []string{"repo"})
 
-	LocksTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name:      "restic_locks_total",
+	LocksTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name:      "restic_current_locks_total",
 		Namespace: "restic",
 		Help:      "Total number of locks in the repository",
 	}, []string{"repo"})

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mj0nez/restic-exporter/internal"
+	"github.com/mj0nez/restic-exporter/internal/collector"
 	"github.com/mj0nez/restic-exporter/internal/info"
 	"github.com/mj0nez/restic-exporter/internal/metrics"
 	"github.com/spf13/cobra"
@@ -50,5 +51,5 @@ func runServer(cmd *cobra.Command, args []string) {
 
 func runCollect(cmd *cobra.Command, args []string) {
 
-	internal.Collect()
+	collector.Collect()
 }
