@@ -1,3 +1,6 @@
+// This code is vendored from from restic, mainly to simplify parsing
+// the JSON-output of CLI calls.
+
 package restic
 
 import (
