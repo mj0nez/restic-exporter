@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mj0nez/restic-exporter/internal/collector"
+	"github.com/mj0nez/restic-exporter/internal/config"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -60,7 +61,7 @@ func NewRouter(registry *prometheus.Registry) *gin.Engine {
 	return router
 }
 
-func RunServer(server *http.Server) error {
+func RunServer(server *http.Server, repos []config.Repository) error {
 	// creates a new goroutine which calls context.cancel as soon
 	// as any of signalsToListenTo is received
 	ctx, stop := signal.NotifyContext(context.Background(), signalsToListenTo...)
@@ -73,8 +74,10 @@ func RunServer(server *http.Server) error {
 	log.Debug("Starting background worker.")
 
 	// TODO: here we should create a worker per repository
-	go startWorker(collector.GetSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
-	go startWorker(collector.RunCheck, ctx, time.Duration(20)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+	for _, repo := range repos {
+		go startWorker(collector.GetSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+
+	}
 
 	log.Debug("Starting http listener.")
 	log.Info(fmt.Sprintf("Listening on %s", server.Addr))
