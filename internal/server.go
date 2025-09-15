@@ -72,6 +72,7 @@ func RunServer(server *http.Server) error {
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	log.Debug("Starting background worker.")
 
+	// TODO: here we should create a worker per repository
 	go startWorker(collector.GetSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
 	go startWorker(collector.RunCheck, ctx, time.Duration(20)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
 
