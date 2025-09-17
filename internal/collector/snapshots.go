@@ -11,8 +11,8 @@ import (
 	"github.com/mj0nez/restic-exporter/internal/metrics"
 )
 
-func Collect(repo config.Repository) {
-	snaps, err := getSnapshots(context.TODO(), "restic", repo.Restic.Repo, repo.Restic.Password)
+func Collect(binPath string, repo config.Repository) {
+	snaps, err := getSnapshots(context.TODO(), binPath, repo.Restic.Repo, repo.Restic.Password)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", repo.Restic.Repo, err))
 		return
@@ -23,7 +23,7 @@ func Collect(repo config.Repository) {
 }
 
 func GetSnapshots(ctx context.Context, binPath string, repo config.Repository) {
-	snaps, err := getSnapshots(ctx, "restic", repo.Restic.Repo, repo.Restic.Password)
+	snaps, err := getSnapshots(ctx, binPath, repo.Restic.Repo, repo.Restic.Password)
 
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %+v", repo, err))

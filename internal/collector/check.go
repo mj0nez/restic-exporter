@@ -24,7 +24,7 @@ func boolToInt(val bool) int8 {
 }
 
 func RunCheck(ctx context.Context, binPath string, repo config.Repository) {
-	check, err := checkRepo(ctx, "restic", repo.Restic.Repo, repo.Restic.Password)
+	check, err := checkRepo(ctx, binPath, repo.Restic.Repo, repo.Restic.Password)
 
 	if err != nil {
 		if errors.Is(err, ErrCheck) {

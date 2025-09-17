@@ -63,7 +63,7 @@ func runCollect(cmd *cobra.Command, args []string) {
 	restic_pwd := os.Getenv("RESTIC_PASSWORD")
 
 	repo := config.Repository{Name: "one-shot", Restic: config.ResticConfig{Repo: restic_repo, Password: restic_pwd}}
-	collector.Collect(repo)
+	collector.Collect("/usr/bin/restic", repo)
 }
 
 func exportDefault(cmd *cobra.Command, args []string) {
