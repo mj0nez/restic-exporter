@@ -61,6 +61,8 @@ var (
 		Namespace: "restic",
 		Help:      "Timestamp of the last backup",
 	}, commonLabels[:])
+	// TODO: add a metric for snapshot duration
+	// TODO: add a metrics for the snapshot summary
 	BackupFilesTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name:      "restic_backup_files_total",
 		Namespace: "restic",

@@ -71,3 +71,15 @@ type CheckSummary struct {
 	HintRepairIndex bool     `json:"suggest_repair_index"` // run "restic repair index"
 	HintPrune       bool     `json:"suggest_prune"`        // run "restic prune"
 }
+
+
+type StatsContainer struct {
+	TotalSize              uint64  `json:"total_size"`
+	TotalUncompressedSize  uint64  `json:"total_uncompressed_size,omitempty"`
+	CompressionRatio       float64 `json:"compression_ratio,omitempty"`
+	CompressionProgress    float64 `json:"compression_progress,omitempty"`
+	CompressionSpaceSaving float64 `json:"compression_space_saving,omitempty"`
+	TotalFileCount         uint64  `json:"total_file_count,omitempty"`
+	TotalBlobCount         uint64  `json:"total_blob_count,omitempty"`
+	SnapshotsCount         int     `json:"snapshots_count"`
+}
