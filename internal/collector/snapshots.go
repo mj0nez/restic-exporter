@@ -1,58 +1,47 @@
 package collector
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/mj0nez/restic-exporter/contrib/restic"
+	"github.com/mj0nez/restic-exporter/internal/config"
 	"github.com/mj0nez/restic-exporter/internal/metrics"
 )
 
-func Collect() {
-	snaps, err := getSnapshots(context.TODO(), "restic", ".tmp/repo")
+func Collect(repo config.Repository) {
+	snaps, err := getSnapshots(context.TODO(), "restic", repo.Restic.Repo, repo.Restic.Password)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", ".tmp/repo", err))
+		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", repo.Restic.Repo, err))
+		return
 	}
 
-	fmt.Printf("%v", snaps)
+	fmt.Printf("%+v", snaps)
 
 }
 
-func GetSnapshots(ctx context.Context, binPath string, repo string) {
-	snaps, err := getSnapshots(ctx, "restic", repo)
+func GetSnapshots(ctx context.Context, binPath string, repo config.Repository) {
+	snaps, err := getSnapshots(ctx, "restic", repo.Restic.Repo, repo.Restic.Password)
 
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", repo, err))
+		slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %+v", repo, err))
 	}
 
 	// metrics.CheckSuccess.
-	metrics.SnapshotsTotal.WithLabelValues(repo).Set(float64(len(snaps)))
+	metrics.SnapshotsTotal.WithLabelValues(repo.Name).Set(float64(len(snaps)))
 
 }
 
-func getSnapshots(ctx context.Context, binPath string, repo string) ([]restic.Snapshot, error) {
+func getSnapshots(ctx context.Context, binPath string, repo string, password string) ([]restic.Snapshot, error) {
 
-	args := []string{"-r", repo, "--no-lock", "snapshots", "--json"}
+	args := []string{"--no-lock", "snapshots", "--json"}
 
-	cwd, err := os.Getwd()
+	stdout, err := run(ctx, binPath, args, repo, password, true)
 	if err != nil {
 		return nil, err
 	}
-	env := make(map[string]string)
-
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-
-	err = runCommand(ctx, binPath, cwd, args, env, stdout, stderr)
-	if err != nil {
-		return nil, err
-	}
-	// fmt.Println(stdout.String())
-	// fmt.Println(stderr.String())
 
 	snapshots := make([]restic.Snapshot, 0, 10)
 

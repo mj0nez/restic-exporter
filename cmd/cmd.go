@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/mj0nez/restic-exporter/internal"
 	"github.com/mj0nez/restic-exporter/internal/collector"
@@ -49,7 +50,7 @@ func runServer(cmd *cobra.Command, args []string) {
 
 	metricsRegistry := metrics.NewRegistry()
 	server := internal.NewHttpServer(conf.Server.Addr, internal.NewRouter(metricsRegistry), internal.NewHttpServerOpts())
-	err := internal.RunServer(server)
+	err := internal.RunServer(server, conf.App.Prefetch, conf.App.BinaryPath, conf.Repositories)
 
 	if err != nil {
 		fmt.Printf("%v", err)
@@ -58,8 +59,11 @@ func runServer(cmd *cobra.Command, args []string) {
 }
 
 func runCollect(cmd *cobra.Command, args []string) {
+	restic_repo := os.Getenv("RESTIC_REPOSITORY")
+	restic_pwd := os.Getenv("RESTIC_PASSWORD")
 
-	collector.Collect()
+	repo := config.Repository{Name: "one-shot", Restic: config.ResticConfig{Repo: restic_repo, Password: restic_pwd}}
+	collector.Collect(repo)
 }
 
 func exportDefault(cmd *cobra.Command, args []string) {

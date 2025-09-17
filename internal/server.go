@@ -61,7 +61,7 @@ func NewRouter(registry *prometheus.Registry) *gin.Engine {
 	return router
 }
 
-func RunServer(server *http.Server, repos []config.Repository) error {
+func RunServer(server *http.Server, prefetch bool, binPath string, repos []config.Repository) error {
 	// creates a new goroutine which calls context.cancel as soon
 	// as any of signalsToListenTo is received
 	ctx, stop := signal.NotifyContext(context.Background(), signalsToListenTo...)
@@ -75,7 +75,12 @@ func RunServer(server *http.Server, repos []config.Repository) error {
 
 	// TODO: here we should create a worker per repository
 	for _, repo := range repos {
-		go startWorker(collector.GetSnapshots, ctx, time.Duration(15)*time.Second, "restic", []string{".tmp/repo", ".tmp/repo2"})
+		if repo.CollectionIntervals.Check > 0 {
+			go startWorker(collector.RunCheck, ctx, prefetch, time.Duration(repo.CollectionIntervals.Check)*time.Second, binPath, repo)
+		}
+		if repo.CollectionIntervals.Snapshot > 0 {
+			go startWorker(collector.GetSnapshots, ctx, prefetch, time.Duration(repo.CollectionIntervals.Snapshot)*time.Second, binPath, repo)
+		}
 
 	}
 

@@ -1,0 +1,23 @@
+---
+# logging:
+#   level: info
+
+app:
+  binary_path: /usr/bin/restic
+  prefetch: true
+
+repositories:
+  - name: repo1
+    restic:
+      repo: .tmp/repo1
+      password: start1234
+    collection_intervals:
+      check: 20 # seconds
+      snapshots: 15 # seconds
+  - name: repo2
+    restic:
+      repo: .tmp/repo2
+      password: start1234
+    collection:
+      check: -2 # seconds
+      # snapshot: 60 # seconds

@@ -1,14 +1,50 @@
 package collector
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-func runCommand(ctx context.Context, binPath string, cwd string, args []string, env map[string]string, stdout io.Writer, stderr io.Writer) error {
+type CmdBuffer struct {
+	Message string //`mapstructure:"message"`
+}
+
+func run(ctx context.Context, binPath string, args []string, repo string, password string, handleErrors bool) (*bytes.Buffer, error) {
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return stdout, err
+	}
+	env := make(map[string]string)
+
+	env["RESTIC_REPOSITORY"] = repo
+	env["RESTIC_PASSWORD"] = password
+
+	command := prepareCommand(ctx, binPath, cwd, args, env, stdout, stderr)
+
+	// run, handle errors and parse the returned message
+	err = command.Run()
+	if handleErrors && err != nil {
+		cmdErr := &CmdBuffer{}
+		if err := json.Unmarshal(stderr.Bytes(), cmdErr); err != nil {
+			fmt.Printf("Failed to parse command output! Raw message: %v", stderr.String())
+		} else {
+			fmt.Println(cmdErr.Message)
+		}
+	}
+
+	return stdout, err
+}
+
+func prepareCommand(ctx context.Context, binPath string, cwd string, args []string, env map[string]string, stdout io.Writer, stderr io.Writer) *exec.Cmd {
 	var cmd *exec.Cmd
 
 	if ctx != nil {
@@ -40,7 +76,7 @@ func runCommand(ctx context.Context, binPath string, cwd string, args []string, 
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
-	return cmd.Run()
+	return cmd
 }
 
 // TODO consider extracting the common parts of ech cli usage to util func

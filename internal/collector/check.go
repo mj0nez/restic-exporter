@@ -1,16 +1,15 @@
 package collector
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
 
 	"github.com/mj0nez/restic-exporter/contrib/restic"
+	"github.com/mj0nez/restic-exporter/internal/config"
 	"github.com/mj0nez/restic-exporter/internal/metrics"
 )
 
@@ -24,44 +23,40 @@ func boolToInt(val bool) int8 {
 	return i
 }
 
-func RunCheck(ctx context.Context, binPath string, repo string) {
-	check, err := checkRepo(ctx, "restic", repo)
+func RunCheck(ctx context.Context, binPath string, repo config.Repository) {
+	check, err := checkRepo(ctx, "restic", repo.Restic.Repo, repo.Restic.Password)
 
 	if err != nil {
 		if errors.Is(err, ErrCheck) {
 			slog.Error(fmt.Sprintf("Failed to get snapshot data in repo %v because: %v", repo, err))
 		} else {
-			metrics.CheckFailed.WithLabelValues(repo).Inc()
+			metrics.CheckFailed.WithLabelValues(repo.Name).Inc()
 		}
 	} else {
 		// metrics.CheckSuccess.
-		metrics.CheckSuccess.WithLabelValues(repo).Inc()
+		metrics.CheckSuccess.WithLabelValues(repo.Name).Inc()
 	}
 
-	metrics.CheckSuggestRepairIndex.WithLabelValues(repo).Set(float64(boolToInt(check.HintRepairIndex)))
-	metrics.CheckSuggestPrune.WithLabelValues(repo).Set(float64(boolToInt(check.HintPrune)))
-	metrics.CheckErrorsTotal.WithLabelValues(repo).Set(float64(check.NumErrors))
+	metrics.CheckSuggestRepairIndex.WithLabelValues(repo.Name).Set(float64(boolToInt(check.HintRepairIndex)))
+	metrics.CheckSuggestPrune.WithLabelValues(repo.Name).Set(float64(boolToInt(check.HintPrune)))
+	metrics.CheckErrorsTotal.WithLabelValues(repo.Name).Set(float64(check.NumErrors))
 
 }
 
-func checkRepo(ctx context.Context, binPath string, repo string) (*restic.CheckSummary, error) {
+func checkRepo(ctx context.Context, binPath string, repo string, password string) (*restic.CheckSummary, error) {
 	// check and verify integrity fo the repository
 	summary := &restic.CheckSummary{}
 
-	args := []string{"-r", repo, "--no-lock", "check", "--json"}
+	args := []string{"--no-lock", "check", "--json"}
 
-	cwd, err := os.Getwd()
+	// this command uses the return code to indicate the repository's status
+	// therefore rc != 0 should not be logged
+	stdout, err := run(ctx, binPath, args, repo, password, false)
+
+	// TODO: check if it would be better to add a rc allow-list to the run function
+	// 		I'm currently unsure if that would be wise, because there would be no
+	//		clear way to map logic to each code - like below...
 	if err != nil {
-		return summary, err
-	}
-	env := make(map[string]string)
-
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-
-	err = runCommand(ctx, binPath, cwd, args, env, stdout, stderr)
-
-	if err == nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			// cmd.Run returned with an non-zero exit code
 			if exitError.ExitCode() == 1 {

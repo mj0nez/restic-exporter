@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultIntervalCheck    int32 = 3600
+	defaultIntervalSnapshot int32 = 60
+)
+
 // Global variable which allows sharing a cached Config instance.
 var globalConfig *Config = nil
 
@@ -16,6 +21,20 @@ type (
 	defaultConfig = map[string]defaultValues
 )
 
+type LoggingConfig struct {
+	Level string
+}
+
+var loggingConfigDefaults = defaultValues{"level": "info"}
+
+type AppConfig struct {
+	BinaryPath string `mapstructure:"binary_path"`
+	Prefetch   bool
+	// ShutdownTimeout int32 `mapstructure:"shutdown_timeout"` // in seconds
+}
+
+var appConfigDefaults = defaultValues{"binary_path": "/usr/bin/restic", "prefetch": true}
+
 type ServerConfig struct {
 	Addr            string
 	ShutdownTimeout int32 `mapstructure:"shutdown_timeout"` // in seconds
@@ -23,20 +42,25 @@ type ServerConfig struct {
 
 var serverConfigDefaults = defaultValues{"addr": "0.0.0.0:8081"}
 
-type LoggingConfig struct {
-	Level string
+type CollectionIntervalsConfig struct {
+	Check    int32
+	Snapshot int32
 }
 
-var loggingConfigDefaults = defaultValues{"level": "info"}
+type ResticConfig struct {
+	Repo     string
+	Password string
+}
 
 type Repository struct {
-	Name          string
-	Url           string
-	CheckInterval uint `mapstructure:"check_interval"` // in seconds
+	Name                string
+	Restic              ResticConfig
+	CollectionIntervals CollectionIntervalsConfig `mapstructure:"collection_intervals"` // in seconds
 }
 
 type Config struct {
 	Logging      LoggingConfig
+	App          AppConfig
 	Server       ServerConfig
 	Repositories []Repository
 }
@@ -45,6 +69,7 @@ func applyDefaults(vp *viper.Viper) *viper.Viper {
 
 	defaults := defaultConfig{
 		"logging": loggingConfigDefaults,
+		"app":     appConfigDefaults,
 		"server":  serverConfigDefaults,
 	}
 
@@ -61,12 +86,29 @@ func applyDefaults(vp *viper.Viper) *viper.Viper {
 // allows setting of defaults for our array configs, namely the repositories
 func postProcessConfig(conf *Config) {
 	for r, repo := range conf.Repositories {
-		if repo.CheckInterval == 0 {
-			conf.Repositories[r] = Repository{
-				Name:          repo.Name,
-				Url:           repo.Url,
-				CheckInterval: 60,
-			}
+
+		collectionConfig := &repo.CollectionIntervals
+
+		switch {
+		case collectionConfig.Check == 0:
+			collectionConfig.Check = defaultIntervalCheck
+		case collectionConfig.Check < 0:
+			// ensure downstream can process this
+			collectionConfig.Check = -1
+		}
+
+		switch {
+		case collectionConfig.Snapshot == 0:
+			collectionConfig.Snapshot = defaultIntervalSnapshot
+		case collectionConfig.Snapshot < 0:
+			// ensure downstream can process this
+			collectionConfig.Snapshot = -1
+		}
+
+		conf.Repositories[r] = Repository{
+			Name:                repo.Name,
+			Restic:              repo.Restic,
+			CollectionIntervals: repo.CollectionIntervals,
 		}
 	}
 
