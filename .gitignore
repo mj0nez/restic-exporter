@@ -218,5 +218,6 @@ pyrightconfig.json
 
 bin/**
 !bin/.gitkeep
-.tmp
+.tmp/**
+!.tmp/.gitkeep
 .labdog
